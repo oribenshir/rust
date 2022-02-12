@@ -10,7 +10,7 @@ use rustc_hir as hir;
 use rustc_hir::def::{CtorKind, DefKind};
 use rustc_hir::def_id::{DefId, DefIndex, DefPathHash, StableCrateId};
 use rustc_hir::definitions::DefKey;
-use rustc_hir::lang_items;
+use rustc_hir::{lang_items, ItemLocalMap};
 use rustc_index::{bit_set::FiniteBitSet, vec::IndexVec};
 use rustc_middle::metadata::ModChild;
 use rustc_middle::middle::exported_symbols::{ExportedSymbol, SymbolExportLevel};
@@ -18,7 +18,7 @@ use rustc_middle::mir;
 use rustc_middle::thir;
 use rustc_middle::ty::fast_reject::SimplifiedType;
 use rustc_middle::ty::query::Providers;
-use rustc_middle::ty::{self, ReprOptions, Ty};
+use rustc_middle::ty::{self, ExternalGeneratorInteriorTypeCause, ReprOptions, Ty};
 use rustc_serialize::opaque::Encoder;
 use rustc_session::config::SymbolManglingVersion;
 use rustc_session::cstore::{CrateDepKind, ForeignModule, LinkagePreference, NativeLib};
@@ -251,6 +251,14 @@ crate struct TraitImpls {
     impls: Lazy<[(DefIndex, Option<SimplifiedType>)]>,
 }
 
+#[derive(MetadataEncodable, MetadataDecodable)]
+pub struct GeneratorDiagnosticData<'tcx> {
+    generator_interior_type: ty::Binder<'tcx, Vec<ExternalGeneratorInteriorTypeCause<'tcx>>>,
+    hir_owner: DefId,
+    nodes_types: ItemLocalMap<Ty<'tcx>>,
+    adjustments: ItemLocalMap<Vec<ty::adjustment::Adjustment<'tcx>>>,
+}
+
 /// Define `LazyTables` and `TableBuilders` at the same time.
 macro_rules! define_tables {
     ($($name:ident: Table<$IDX:ty, $T:ty>),+ $(,)?) => {
@@ -325,6 +333,7 @@ define_tables! {
     def_keys: Table<DefIndex, Lazy<DefKey>>,
     def_path_hashes: Table<DefIndex, Lazy<DefPathHash>>,
     proc_macro_quoted_spans: Table<usize, Lazy<Span>>,
+    generator_diagnostic_data: Table<DefIndex, Lazy<GeneratorDiagnosticData<'tcx>>>,
 }
 
 #[derive(Copy, Clone, MetadataEncodable, MetadataDecodable)]

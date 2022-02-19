@@ -29,7 +29,7 @@ use rustc_middle::mir::interpret::{AllocDecodingSession, AllocDecodingState};
 use rustc_middle::thir;
 use rustc_middle::ty::codec::TyDecoder;
 use rustc_middle::ty::fast_reject::SimplifiedType;
-use rustc_middle::ty::LocalGeneratorDiagnosticData;
+use rustc_middle::ty::GeneratorDiagnosticData;
 use rustc_middle::ty::{self, Ty, TyCtxt, Visibility};
 use rustc_serialize::{opaque, Decodable, Decoder};
 use rustc_session::cstore::{
@@ -1740,13 +1740,13 @@ impl<'a, 'tcx> CrateMetadataRef<'a> {
         self,
         tcx: TyCtxt<'tcx>,
         id: DefIndex,
-    ) -> Option<LocalGeneratorDiagnosticData<'tcx>> {
+    ) -> Option<GeneratorDiagnosticData<'tcx>> {
         self.root
             .tables
             .generator_diagnostic_data
             .get(self, id)
             .map(|param| param.decode((self, tcx)))
-            .map(|generator_data| LocalGeneratorDiagnosticData {
+            .map(|generator_data| GeneratorDiagnosticData {
                 generator_interior_type: generator_data.generator_interior_type,
                 hir_owner: generator_data.hir_owner,
                 nodes_types: generator_data.nodes_types,

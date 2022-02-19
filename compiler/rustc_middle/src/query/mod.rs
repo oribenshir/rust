@@ -1945,8 +1945,8 @@ rustc_queries! {
         desc { "performing HIR wf-checking for predicate {:?} at item {:?}", key.0, key.1 }
     }
 
-    query generator_diagnostic_data(key: DefId) -> Option<LocalGeneratorDiagnosticData<'tcx>> {
-        desc { |tcx| "looking up generator kind of `{}`", tcx.def_path_str(key) }
+    query generator_diagnostic_data(key: DefId) -> Option<GeneratorDiagnosticData<'tcx>> {
+        desc { |tcx| "looking up generator diagnostic data of `{}`", tcx.def_path_str(key) }
         separate_provide_extern
     }
 }

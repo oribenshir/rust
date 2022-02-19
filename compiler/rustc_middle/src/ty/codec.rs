@@ -21,7 +21,7 @@ use rustc_span::Span;
 use std::hash::Hash;
 use std::intrinsics;
 use std::marker::DiscriminantKind;
-
+use tracing::info;
 /// The shorthand encoding uses an enum's variant index `usize`
 /// and is offset by this value so it never matches a real variant.
 /// This offset is also chosen so that the first byte is never < 0x80.
@@ -522,4 +522,5 @@ impl_binder_encode_decode! {
     ty::ExistentialPredicate<'tcx>,
     ty::TraitRef<'tcx>,
     Vec<ty::GeneratorInteriorTypeCause<'tcx>>,
+    Vec<ty::ExternalGeneratorInteriorTypeCause<'tcx>>,
 }

@@ -28,6 +28,8 @@ use rustc_middle::traits::specialization_graph;
 use rustc_middle::ty::codec::TyEncoder;
 use rustc_middle::ty::fast_reject::{self, SimplifiedType, SimplifyParams, StripReferences};
 use rustc_middle::ty::query::Providers;
+use rustc_middle::ty::GeneratorDiagnosticData;
+use rustc_middle::ty::GeneratorInteriorTypeCause;
 use rustc_middle::ty::{self, SymbolName, Ty, TyCtxt};
 use rustc_serialize::{opaque, Encodable, Encoder};
 use rustc_session::config::CrateType;
@@ -42,7 +44,7 @@ use rustc_target::abi::VariantIdx;
 use std::hash::Hash;
 use std::num::NonZeroUsize;
 use std::path::Path;
-use tracing::{debug, trace};
+use tracing::{debug, info, trace};
 
 pub(super) struct EncodeContext<'a, 'tcx> {
     opaque: opaque::Encoder,
@@ -1582,11 +1584,11 @@ impl<'a, 'tcx> EncodeContext<'a, 'tcx> {
 
     fn encode_info_for_closure(&mut self, hir_id: hir::HirId) {
         let def_id = self.tcx.hir().local_def_id(hir_id);
-        debug!("EncodeContext::encode_info_for_closure({:?})", def_id);
-
+        info!("EncodeContext::encode_info_for_closure({:?})", def_id);
         // NOTE(eddyb) `tcx.type_of(def_id)` isn't used because it's fully generic,
         // including on the signature, which is inferred in `typeck.
-        let ty = self.tcx.typeck(def_id).node_type(hir_id);
+        let typeck_result: &'tcx ty::TypeckResults<'tcx> = self.tcx.typeck(def_id);
+        let ty = typeck_result.node_type(hir_id);
 
         match ty.kind() {
             ty::Generator(..) => {
@@ -1615,8 +1617,7 @@ impl<'a, 'tcx> EncodeContext<'a, 'tcx> {
                     nodes_types: typeck_result.node_types_owned(),
                     adjustments: typeck_result.adjustments_owned(),
                 };
-                record!(self.tables.kind[def_id.to_def_id()] <- EntryKind::Generator);
-                record!(self.tables.generator_kind[def_id.to_def_id()] <- data);
+                record!(self.tables.kind[def_id.to_def_id()] <- EntryKind::Generator(data));
                 record!(self.tables.generator_diagnostic_data[def_id.to_def_id()]  <- generator_diagnostic_data);
             }
 

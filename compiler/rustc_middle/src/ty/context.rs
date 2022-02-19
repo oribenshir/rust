@@ -69,7 +69,6 @@ use std::iter;
 use std::mem;
 use std::ops::{Bound, Deref};
 use std::sync::Arc;
-use tracing::info;
 
 pub trait OnDiskCache<'tcx>: rustc_data_structures::sync::Sync {
     /// Creates a new `OnDiskCache` instance from the serialized data in `data`.
@@ -338,24 +337,9 @@ pub struct GeneratorInteriorTypeCause<'tcx> {
     pub expr: Option<hir::HirId>,
 }
 
-#[derive(TyEncodable, TyDecodable, Clone, Debug, Eq, Hash, PartialEq, HashStable)]
-#[derive(TypeFoldable)]
-pub struct ExternalGeneratorInteriorTypeCause<'tcx> {
-    /// Type of the captured binding.
-    pub ty: Ty<'tcx>,
-    /// Span of the binding that was captured.
-    pub span: Span,
-    /// Span of the scope of the captured binding.
-    pub scope_span: Option<Span>,
-    /// Span of `.await` or `yield` expression.
-    pub yield_span: Span,
-    /// Expr which the type evaluated from.
-    pub expr: Option<DefId>,
-}
-
 #[derive(TyEncodable, TyDecodable, Clone, Debug, HashStable)]
-pub struct LocalGeneratorDiagnosticData<'tcx> {
-    pub generator_interior_type: ty::Binder<'tcx, Vec<ExternalGeneratorInteriorTypeCause<'tcx>>>,
+pub struct GeneratorDiagnosticData<'tcx> {
+    pub generator_interior_type: ty::Binder<'tcx, Vec<GeneratorInteriorTypeCause<'tcx>>>,
     pub hir_owner: DefId,
     pub nodes_types: ItemLocalMap<Ty<'tcx>>,
     pub adjustments: ItemLocalMap<Vec<ty::adjustment::Adjustment<'tcx>>>,
@@ -613,7 +597,7 @@ impl<'tcx> TypeckResults<'tcx> {
         LocalTableInContextMut { hir_owner: self.hir_owner, data: &mut self.node_types }
     }
 
-    pub fn node_types_owned(&self) -> ItemLocalMap<Ty<'tcx>> {
+    pub fn node_types_clone(&self) -> ItemLocalMap<Ty<'tcx>> {
         return self.node_types.clone();
     }
 
@@ -676,7 +660,7 @@ impl<'tcx> TypeckResults<'tcx> {
         LocalTableInContextMut { hir_owner: self.hir_owner, data: &mut self.adjustments }
     }
 
-    pub fn adjustments_owned(&self) -> ItemLocalMap<Vec<ty::adjustment::Adjustment<'tcx>>> {
+    pub fn adjustments_clone(&self) -> ItemLocalMap<Vec<ty::adjustment::Adjustment<'tcx>>> {
         self.adjustments.clone()
     }
 
@@ -2746,10 +2730,7 @@ impl<'tcx> TyCtxt<'tcx> {
         self,
         iter: I,
     ) -> I::Output {
-        info!("making bound variable");
-        let result = iter.intern_with(|xs| self.intern_bound_variable_kinds(xs));
-        info!("done making bound variables");
-        result
+        iter.intern_with(|xs| self.intern_bound_variable_kinds(xs))
     }
 
     /// Walks upwards from `id` to find a node which might change lint levels with attributes.

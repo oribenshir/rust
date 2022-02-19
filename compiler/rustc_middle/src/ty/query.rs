@@ -31,7 +31,7 @@ use crate::traits::{self, ImplSource};
 use crate::ty::fast_reject::SimplifiedType;
 use crate::ty::subst::{GenericArg, SubstsRef};
 use crate::ty::util::AlwaysRequiresDrop;
-use crate::ty::LocalGeneratorDiagnosticData;
+use crate::ty::GeneratorDiagnosticData;
 use crate::ty::{self, AdtSizedConstraint, CrateInherentImpls, ParamEnvAnd, Ty, TyCtxt};
 use rustc_ast as ast;
 use rustc_ast::expand::allocator::AllocatorKind;
